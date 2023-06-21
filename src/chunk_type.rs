@@ -7,70 +7,85 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ChunkType([u8; 4]);
 
+#[allow(dead_code)]
 impl ChunkType {
     pub fn bytes(&self) -> [u8; 4] {
         self.0
     }
 
     pub fn is_critical(&self) -> bool {
-        self.0[0].is_ascii_uppercase() // 判断首字节是否为大写字母，用来判断是否为关键块类型
+        self.0[0] & 32 == 0
     }
 
     pub fn is_public(&self) -> bool {
-        self.0[1].is_ascii_uppercase() // 判断第二个字节是否为大写字母，用来判断是否为公共块类型
+        self.0[1] & 32 == 0
     }
 
     pub fn is_reserved_bit_valid(&self) -> bool {
-        self.0[2].is_ascii_uppercase() // 判断第三个字节是否为大写字母，用来判断保留位是否有效
+        self.0[2] & 32 == 0
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
-        self.0[3].is_ascii_lowercase() // 判断第四个字节是否为小写字母，用来判断是否可安全复制
+        self.0[3] & 32 == 32 // 判断第四个字节的第5位是否为小写
     }
 
     pub fn is_valid(&self) -> bool {
-        let has_uppercase = self.0.iter().any(|&byte| byte.is_ascii_uppercase()); // 判断是否有大写字母
-        let has_lowercase = self.0.iter().any(|&byte| byte.is_ascii_lowercase()); // 判断是否有小写字母
-        self.0.iter().all(|&byte| byte.is_ascii_alphabetic()) && has_uppercase && has_lowercase
-        // 判断是否为字母
+        let third = self.0[2];
+        let fourth = self.0[3];
+
+        // 第三个字节的第5位必须为大写，第四个字节必须为字母
+        (third & 32 == 0) && fourth.is_ascii_alphabetic()
+    }
+
+    pub fn is_ancillary(&self) -> bool {
+        self.0[3] & 32 == 32 // 判断第四个字节的第5位是否为小写
+    }
+
+    pub fn is_private(&self) -> bool {
+        self.0[1] & 32 == 32 // 判断第二个字节的第5位是否为小写
     }
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
-    type Error = ();
+    type Error = &'static str;
 
     fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
-        Ok(ChunkType(value))
+        if ChunkType::is_valid_type(value) {
+            Ok(ChunkType(value))
+        } else {
+            Err("Invalid chunk type")
+        }
     }
 }
 
 impl FromStr for ChunkType {
-    type Err = ();
+    type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 4 {
-            return Err(());
+            return Err("Invalid chunk type");
         }
-
-        let bytes = s.as_bytes();
-        let mut chunk_type = [0; 4];
-
-        for (i, byte) in bytes.iter().enumerate() {
-            // 将 ASCII 字符转换为对应的字节值
-            chunk_type[i] = *byte;
+        let mut bytes = [0u8; 4];
+        for (i, c) in s.chars().enumerate() {
+            bytes[i] = c as u8;
         }
-
-        Ok(ChunkType(chunk_type))
+        ChunkType::try_from(bytes)
     }
 }
 
 impl fmt::Display for ChunkType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // 将字节值转换为对应的 ASCII 字符，并写入到格式化器中
         let s = String::from_utf8_lossy(&self.0);
         write!(f, "{}", s)
     }
 }
+
+impl ChunkType {
+    fn is_valid_type(value: [u8; 4]) -> bool {
+        value.iter().all(u8::is_ascii_alphabetic)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -150,7 +165,7 @@ mod tests {
     #[test]
     pub fn test_invalid_chunk_is_valid() {
         let chunk = ChunkType::from_str("Rust").unwrap();
-        assert!(!chunk.is_valid()); // TODO: 这个地方会 panic
+        assert!(!chunk.is_valid());
 
         let chunk = ChunkType::from_str("Ru1t");
         assert!(chunk.is_err());
