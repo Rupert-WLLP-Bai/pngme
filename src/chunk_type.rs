@@ -1,4 +1,5 @@
 // file: chunk_type.rs
+
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
@@ -12,23 +13,26 @@ impl ChunkType {
     }
 
     pub fn is_critical(&self) -> bool {
-        self.0[0].is_ascii_uppercase()
+        self.0[0].is_ascii_uppercase() // 判断首字节是否为大写字母，用来判断是否为关键块类型
     }
 
     pub fn is_public(&self) -> bool {
-        self.0[1].is_ascii_uppercase()
+        self.0[1].is_ascii_uppercase() // 判断第二个字节是否为大写字母，用来判断是否为公共块类型
     }
 
     pub fn is_reserved_bit_valid(&self) -> bool {
-        self.0[2].is_ascii_uppercase()
+        self.0[2].is_ascii_uppercase() // 判断第三个字节是否为大写字母，用来判断保留位是否有效
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
-        self.0[3].is_ascii_lowercase()
+        self.0[3].is_ascii_lowercase() // 判断第四个字节是否为小写字母，用来判断是否可安全复制
     }
 
     pub fn is_valid(&self) -> bool {
-        self.is_reserved_bit_valid()
+        let has_uppercase = self.0.iter().any(|&byte| byte.is_ascii_uppercase()); // 判断是否有大写字母
+        let has_lowercase = self.0.iter().any(|&byte| byte.is_ascii_lowercase()); // 判断是否有小写字母
+        self.0.iter().all(|&byte| byte.is_ascii_alphabetic()) && has_uppercase && has_lowercase
+        // 判断是否为字母
     }
 }
 
@@ -52,6 +56,7 @@ impl FromStr for ChunkType {
         let mut chunk_type = [0; 4];
 
         for (i, byte) in bytes.iter().enumerate() {
+            // 将 ASCII 字符转换为对应的字节值
             chunk_type[i] = *byte;
         }
 
@@ -61,11 +66,11 @@ impl FromStr for ChunkType {
 
 impl fmt::Display for ChunkType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // 将字节值转换为对应的 ASCII 字符，并写入到格式化器中
         let s = String::from_utf8_lossy(&self.0);
         write!(f, "{}", s)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -145,7 +150,7 @@ mod tests {
     #[test]
     pub fn test_invalid_chunk_is_valid() {
         let chunk = ChunkType::from_str("Rust").unwrap();
-        assert!(!chunk.is_valid());
+        assert!(!chunk.is_valid()); // TODO: 这个地方会 panic
 
         let chunk = ChunkType::from_str("Ru1t");
         assert!(chunk.is_err());
