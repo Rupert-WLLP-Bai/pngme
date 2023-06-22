@@ -56,6 +56,18 @@ impl ChunkType {
     pub fn is_private(&self) -> bool {
         self.0[1] & 32 == 32 // 判断第二个字节的第5位是否为小写
     }
+
+    /// from_str 方法
+    pub fn from_str(s: &str) -> Result<Self, &'static str> {
+        if s.len() != 4 {
+            return Err("Invalid chunk type");
+        }
+        let mut bytes = [0u8; 4];
+        for (i, c) in s.chars().enumerate() {
+            bytes[i] = c as u8;
+        }
+        ChunkType::try_from(bytes)
+    }
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
