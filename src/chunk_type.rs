@@ -1,4 +1,8 @@
-// file: chunk_type.rs
+//! # Chunk Type
+//! 作者：Norfloxaciner <1762161822@qq.com>
+//! 创建/修改日期：2023/06/22
+//! 
+//! 该模块包含了 `ChunkType` 结构体的实现。
 
 use std::convert::TryFrom;
 use std::fmt;
@@ -9,26 +13,32 @@ pub struct ChunkType([u8; 4]);
 
 #[allow(dead_code)]
 impl ChunkType {
+    /// 获取 ChunkType 的字节数组表示
     pub fn bytes(&self) -> [u8; 4] {
         self.0
     }
 
+    /// 检查 ChunkType 是否为关键类型
     pub fn is_critical(&self) -> bool {
         self.0[0] & 32 == 0
     }
 
+    /// 检查 ChunkType 是否为公共类型
     pub fn is_public(&self) -> bool {
         self.0[1] & 32 == 0
     }
 
+    /// 检查 ChunkType 的保留位是否有效
     pub fn is_reserved_bit_valid(&self) -> bool {
         self.0[2] & 32 == 0
     }
 
+    /// 检查 ChunkType 是否可以安全复制
     pub fn is_safe_to_copy(&self) -> bool {
         self.0[3] & 32 == 32 // 判断第四个字节的第5位是否为小写
     }
 
+    /// 检查 ChunkType 是否为有效类型
     pub fn is_valid(&self) -> bool {
         let third = self.0[2];
         let fourth = self.0[3];
@@ -37,10 +47,12 @@ impl ChunkType {
         (third & 32 == 0) && fourth.is_ascii_alphabetic()
     }
 
+    /// 检查 ChunkType 是否为辅助类型
     pub fn is_ancillary(&self) -> bool {
         self.0[3] & 32 == 32 // 判断第四个字节的第5位是否为小写
     }
 
+    /// 检查 ChunkType 是否为私有类型
     pub fn is_private(&self) -> bool {
         self.0[1] & 32 == 32 // 判断第二个字节的第5位是否为小写
     }
@@ -49,6 +61,7 @@ impl ChunkType {
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = &'static str;
 
+    /// 尝试将字节数组转换为 ChunkType 类型
     fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
         if ChunkType::is_valid_type(value) {
             Ok(ChunkType(value))
@@ -61,6 +74,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
 impl FromStr for ChunkType {
     type Err = &'static str;
 
+    /// 将字符串解析为 ChunkType 类型
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 4 {
             return Err("Invalid chunk type");
@@ -74,6 +88,7 @@ impl FromStr for ChunkType {
 }
 
 impl fmt::Display for ChunkType {
+    /// 将 ChunkType 类型格式化为字符串
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = String::from_utf8_lossy(&self.0);
         write!(f, "{}", s)
@@ -81,6 +96,7 @@ impl fmt::Display for ChunkType {
 }
 
 impl ChunkType {
+    /// 检查是否为有效的 ChunkType 类型
     fn is_valid_type(value: [u8; 4]) -> bool {
         value.iter().all(u8::is_ascii_alphabetic)
     }
