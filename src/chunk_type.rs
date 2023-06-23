@@ -1,6 +1,6 @@
 //! # Chunk Type
-//! 作者：Norfloxaciner <1762161822@qq.com>
-//! 创建/修改日期：2023/06/22
+//! 作者: Norfloxaciner <1762161822@qq.com>
+//! 创建/修改日期: 2023/06/22
 //! 
 //! 该模块包含了 `ChunkType` 结构体的实现。
 
